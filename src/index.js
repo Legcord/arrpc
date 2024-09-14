@@ -9,8 +9,6 @@ log("arRPC v3.5.0");
 import * as Bridge from "./bridge.js";
 import Server from "./server.js";
 
-(async () => {
-  const server = new Server();
+const server = new Server();
 
-  server.on("activity", (data) => Bridge.send(data));
-})();
+server.on("activity", (data) => Bridge.send(data));
