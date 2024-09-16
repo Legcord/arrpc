@@ -26,50 +26,58 @@ Rich Presence (RPC) is the name for how some apps can talk to Discord desktop on
 ## Usage
 
 ### Server (**REQUIRED**)
+
 1. Have latest (>=18) Node installed
 2. Clone GitHub repo
 3. `npm install`
 4. Run server with `node src`
 
 ### Web
+
 #### No Mods
+
 1. Get [the arRPC server running](#server-required)
 2. With Discord open, run the content of [`examples/bridge_mod.js`](examples/bridge_mod.js) in Console (Ctrl+Shift+I).
 
 #### Vencord
+
 1. Get [the arRPC server running](#server-required)
 2. Just enable the `WebRichPresence (arRPC)` Vencord plugin!
 
 ### Custom Clients
 
 #### ArmCord
+
 ArmCord has arRPC specially integrated, just enable the option in it's settings (server not required)!
 
 #### Webcord
+
 1. Get [the arRPC server running](#server-required)
 2. Disable the `Use built-in Content Security Policy` option in Advanced settings: ![image](https://user-images.githubusercontent.com/19228318/202926723-93b772fc-f37d-47d4-81fd-b11c5d4051e8.png)
 3. With Webcord open, run the content of [`examples/bridge_mod.js`](examples/bridge_mod.js) in the DevTools Console (Ctrl+Shift+I).
 
 ---
 
-Then just use apps with Discord RPC like normal and they *should* work!
+Then just use apps with Discord RPC like normal and they _should_ work!
 
 <br>
 
 ## Supported
 
 ### Transports
-- [X] WebSocket Server
-  - [X] JSON
+
+- [x] WebSocket Server
+  - [x] JSON
   - [ ] Erlpack
 - [ ] HTTP Server
-- [X] IPC
-- [X] Process Scanning
+- [x] IPC
+- [x] Process Scanning
 
 ### Commands
-- [X] DISPATCH
-- [X] SET_ACTIVITY
-- [X] INVITE_BROWSER
-- [X] GUILD_TEMPLATE_BROWSER
-- [X] DEEP_LINK
-- [X] CONNECTIONS_CALLBACK 
+
+- [x] DISPATCH
+- [x] SET_ACTIVITY
+- [x] INVITE_BROWSER
+- [x] GUILD_TEMPLATE_BROWSER
+- [x] DEEP_LINK
+- [x] CONNECTIONS_CALLBACK
