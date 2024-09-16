@@ -1,49 +1,37 @@
 const rgb = (r, g, b, msg) => `\x1b[38;2;${r};${g};${b}m${msg}\x1b[0m`;
-const log = (...args) =>
-  console.log(
-    `[${rgb(88, 101, 242, "arRPC")} > ${rgb(254, 231, 92, "ipc")}]`,
-    ...args
-  );
+const log = (...args) => console.log(`[${rgb(88, 101, 242, 'arRPC')} > ${rgb(254, 231, 92, 'ipc')}]`, ...args);
 
-import { join } from "path";
-import { platform, env } from "process";
-import { unlinkSync } from "fs";
+import { join } from 'path';
+import { platform, env } from 'process';
+import { unlinkSync } from 'fs';
 
-import { createServer, createConnection } from "net";
+import { createServer, createConnection } from 'net';
 
-const SOCKET_PATH =
-  platform === "win32"
-    ? "\\\\?\\pipe\\discord-ipc"
-    : join(
-        env.XDG_RUNTIME_DIR || env.TMPDIR || env.TMP || env.TEMP || "/tmp",
-        "discord-ipc"
-      );
+const SOCKET_PATH = platform === 'win32' ? '\\\\?\\pipe\\discord-ipc'
+  : join(env.XDG_RUNTIME_DIR || env.TMPDIR || env.TMP || env.TEMP || '/tmp', 'discord-ipc');
 
 // enums for various constants
-const Types = {
-  // types of packets
+const Types = { // types of packets
   HANDSHAKE: 0,
   FRAME: 1,
   CLOSE: 2,
   PING: 3,
-  PONG: 4,
+  PONG: 4
 };
 
-const CloseCodes = {
-  // codes for closures
+const CloseCodes = { // codes for closures
   CLOSE_NORMAL: 1000,
   CLOSE_UNSUPPORTED: 1003,
-  CLOSE_ABNORMAL: 1006,
+  CLOSE_ABNORMAL: 1006
 };
 
-const ErrorCodes = {
-  // codes for errors
+const ErrorCodes = { // codes for errors
   INVALID_CLIENTID: 4000,
   INVALID_ORIGIN: 4001,
   RATELIMITED: 4002,
   TOKEN_REVOKED: 4003,
   INVALID_VERSION: 4004,
-  INVALID_ENCODING: 4005,
+  INVALID_ENCODING: 4005
 };
 
 let uniqueId = 0;
@@ -60,7 +48,7 @@ const encode = (type, data) => {
   return buf;
 };
 
-const read = (socket) => {
+const read = socket => {
   let resp = socket.read(8);
   if (!resp) return;
 
@@ -68,35 +56,34 @@ const read = (socket) => {
   const type = resp.readInt32LE(0);
   const dataSize = resp.readInt32LE(4);
 
-  if (type < 0 || type >= Object.keys(Types).length)
-    throw new Error("invalid type");
+  if (type < 0 || type >= Object.keys(Types).length) throw new Error('invalid type');
 
   let data = socket.read(dataSize);
-  if (!data) throw new Error("failed reading data");
+  if (!data) throw new Error('failed reading data');
 
   data = JSON.parse(Buffer.from(data).toString());
 
   switch (type) {
     case Types.PING:
-      socket.emit("ping", data);
+      socket.emit('ping', data);
       socket.write(encode(Types.PONG, data));
       break;
 
     case Types.PONG:
-      socket.emit("pong", data);
+      socket.emit('pong', data);
       break;
 
     case Types.HANDSHAKE:
-      if (socket._handshook) throw new Error("already handshook");
+      if (socket._handshook) throw new Error('already handshook');
 
       socket._handshook = true;
-      socket.emit("handshake", data);
+      socket.emit('handshake', data);
       break;
 
     case Types.FRAME:
-      if (!socket._handshook) throw new Error("need to handshake first");
+      if (!socket._handshook) throw new Error('need to handshake first');
 
-      socket.emit("request", data);
+      socket.emit('request', data);
       break;
 
     case Types.CLOSE:
@@ -108,20 +95,18 @@ const read = (socket) => {
   read(socket);
 };
 
-const socketIsAvailable = async (socket) => {
+const socketIsAvailable = async socket => {
   socket.pause();
-  socket.on("readable", () => {
+  socket.on('readable', () => {
     try {
       read(socket);
     } catch (e) {
-      log("error whilst reading", e);
+      log('error whilst reading', e);
 
-      socket.end(
-        encode(Types.CLOSE, {
-          code: CloseCodes.CLOSE_UNSUPPORTED,
-          message: e.message,
-        })
-      );
+      socket.end(encode(Types.CLOSE, {
+        code: CloseCodes.CLOSE_UNSUPPORTED,
+        message: e.message
+      }));
       socket.destroy();
     }
   });
@@ -130,47 +115,36 @@ const socketIsAvailable = async (socket) => {
     try {
       socket.end();
       socket.destroy();
-    } catch {}
+    } catch { }
   };
 
   const possibleOutcomes = Promise.race([
-    new Promise((res) => socket.on("error", res)), // errored
-    new Promise((res, rej) => socket.on("pong", () => rej("socket ponged"))), // ponged
-    new Promise((res, rej) => setTimeout(() => rej("timed out"), 1000)), // timed out
-  ]).then(
-    () => true,
-    (e) => e
-  );
+    new Promise(res => socket.on('error', res)), // errored
+    new Promise((res, rej) => socket.on('pong', () => rej('socket ponged'))), // ponged
+    new Promise((res, rej) => setTimeout(() => rej('timed out'), 1000)) // timed out
+  ]).then(() => true, e => e);
 
   socket.write(encode(Types.PING, ++uniqueId));
 
   const outcome = await possibleOutcomes;
   stop();
-  if (process.env.ARRPC_DEBUG)
-    log(
-      "checked if socket is available:",
-      outcome === true,
-      outcome === true ? "" : `- reason: ${outcome}`
-    );
+  if (process.env.ARRPC_DEBUG) log('checked if socket is available:', outcome === true, outcome === true ? '' : `- reason: ${outcome}`);
 
   return outcome === true;
 };
 
 const getAvailableSocket = async (tries = 0) => {
   if (tries > 9) {
-    throw new Error("ran out of tries to find socket", tries);
+    throw new Error('ran out of tries to find socket', tries);
   }
 
-  const path = SOCKET_PATH + "-" + tries;
+  const path = SOCKET_PATH + '-' + tries;
   const socket = createConnection(path);
 
-  if (process.env.ARRPC_DEBUG) log("checking", path);
+  if (process.env.ARRPC_DEBUG) log('checking', path);
 
   if (await socketIsAvailable(socket)) {
-    if (platform !== "win32")
-      try {
-        unlinkSync(path);
-      } catch {}
+    if (platform !== 'win32') try { unlinkSync(path); } catch { }
 
     return path;
   }
@@ -180,104 +154,98 @@ const getAvailableSocket = async (tries = 0) => {
 };
 
 export default class IPCServer {
-  constructor(handers) {
-    return new Promise(async (res) => {
-      this.handlers = handers;
+  constructor(handers) { return new Promise(async res => {
+    this.handlers = handers;
 
-      this.onConnection = this.onConnection.bind(this);
-      this.onMessage = this.onMessage.bind(this);
+    this.onConnection = this.onConnection.bind(this);
+    this.onMessage = this.onMessage.bind(this);
 
-      const server = createServer(this.onConnection);
-      server.on("error", (e) => {
-        log("server error", e);
-      });
-
-      const socketPath = await getAvailableSocket();
-      server.listen(socketPath, () => {
-        log("listening at", socketPath);
-        this.server = server;
-
-        res(this);
-      });
+    const server = createServer(this.onConnection);
+    server.on('error', e => {
+      log('server error', e);
     });
-  }
+
+    const socketPath = await getAvailableSocket();
+    server.listen(socketPath, () => {
+      log('listening at', socketPath);
+      this.server = server;
+
+      res(this);
+    });
+  }); }
 
   onConnection(socket) {
-    log("new connection!");
+    log('new connection!');
 
     socket.pause();
-    socket.on("readable", () => {
+    socket.on('readable', () => {
       try {
         read(socket);
       } catch (e) {
-        log("error whilst reading", e);
+        log('error whilst reading', e);
 
-        socket.end(
-          encode(Types.CLOSE, {
-            code: CloseCodes.CLOSE_UNSUPPORTED,
-            message: e.message,
-          })
-        );
+        socket.end(encode(Types.CLOSE, {
+          code: CloseCodes.CLOSE_UNSUPPORTED,
+          message: e.message
+        }));
         socket.destroy();
       }
     });
 
-    socket.once("handshake", (params) => {
-      if (process.env.ARRPC_DEBUG) log("handshake:", params);
+    socket.once('handshake', params => {
+      if (process.env.ARRPC_DEBUG) log('handshake:', params);
 
       const ver = parseInt(params.v ?? 1);
-      const clientId = params.client_id ?? "";
+      const clientId = params.client_id ?? '';
       // encoding is always json for ipc
 
-      socket.close = (code = CloseCodes.CLOSE_NORMAL, message = "") => {
-        socket.end(
-          encode(Types.CLOSE, {
-            code,
-            message,
-          })
-        );
+      socket.close = (code = CloseCodes.CLOSE_NORMAL, message = '') => {
+        socket.end(encode(Types.CLOSE, {
+          code,
+          message
+        }));
         socket.destroy();
       };
 
       if (ver !== 1) {
-        log("unsupported version requested", ver);
+        log('unsupported version requested', ver);
 
         socket.close(ErrorCodes.INVALID_VERSION);
         return;
       }
 
-      if (clientId === "") {
-        log("client id required");
+      if (clientId === '') {
+        log('client id required');
 
         socket.close(ErrorCodes.INVALID_CLIENTID);
         return;
       }
 
-      socket.on("error", (e) => {
-        log("socket error", e);
+      socket.on('error', e => {
+        log('socket error', e);
       });
 
-      socket.on("close", (e) => {
-        log("socket closed", e);
+      socket.on('close', e => {
+        log('socket closed', e);
         this.handlers.close(socket);
       });
 
-      socket.on("request", this.onMessage.bind(this, socket));
+      socket.on('request', this.onMessage.bind(this, socket));
 
       socket._send = socket.send;
-      socket.send = (msg) => {
-        if (process.env.ARRPC_DEBUG) log("sending", msg);
+      socket.send = msg => {
+        if (process.env.ARRPC_DEBUG) log('sending', msg);
         socket.write(encode(Types.FRAME, msg));
       };
 
       socket.clientId = clientId;
 
       this.handlers.connection(socket);
-    });
+    })
   }
 
   onMessage(socket, msg) {
-    if (process.env.ARRPC_DEBUG) log("message", msg);
+    if (process.env.ARRPC_DEBUG) log('message', msg);
     this.handlers.message(socket, msg);
   }
 }
