@@ -6,10 +6,11 @@ import { EventEmitter } from 'events';
 import IPCServer from './transports/ipc.js';
 import WSServer from './transports/websocket.js';
 import ProcessServer from './process/index.js';
-
+import * as Natives from './process/native/index.js';
+const Native = Natives[process.platform];
 let socketId = 0;
 export default class RPCServer extends EventEmitter {
-  constructor() { super();
+  constructor(additionalDetectables) { super();
     this.onConnection = this.onConnection.bind(this);
     this.onMessage = this.onMessage.bind(this);
     this.onClose = this.onClose.bind(this);
@@ -19,13 +20,28 @@ export default class RPCServer extends EventEmitter {
       message: this.onMessage,
       close: this.onClose
     };
-
+    if (additionalDetectables) {
+      if (!Array.isArray(additionalDetectables)) {
+        log('additionalDetectables must be an array');
+        handlers.customDetectables = [];
+      } else {
+        handlers.customDetectables = additionalDetectables;
+      }
+    }
     this.ipc = new IPCServer(handlers);
     this.ws = new WSServer(handlers);
 
     if (!process.argv.includes('--no-process-scanning') && !process.env.ARRPC_NO_PROCESS_SCANNING) new ProcessServer(handlers);
 
     return this;
+  }
+
+  async getProcessesList() {
+    if (!Native) {
+      log('unsupported detectables platform:', process.platform);
+      return [];
+    }
+    return await Native.getProcesses();
   }
 
   onConnection(socket) {
