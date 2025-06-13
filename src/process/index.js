@@ -46,7 +46,6 @@ export default class ProcessServer {
       const toCompare = [];
       const splitPath = path.split('/');
       for (let i = 1; i < splitPath.length; i++) {
-        console.log(splitPath.slice(-i).join('/'));
         toCompare.push(splitPath.slice(-i).join('/'));
       }
 
