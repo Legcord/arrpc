@@ -16,7 +16,7 @@ const Native = Natives[process.platform];
 const timestamps = {}, names = {}, pids = {};
 export default class ProcessServer {
   constructor(handlers) {
-    if (!Native) return; // log('unsupported platform:', process.platform);
+    if (!Native) return log('unsupported platform:', process.platform);
 
     this.handlers = handlers;
 
@@ -38,10 +38,15 @@ export default class ProcessServer {
     // log(`got processed in ${(performance.now() - startTime).toFixed(2)}ms`);
 
     for (const [ pid, _path, args ] of processes) {
-      const path = _path.toLowerCase().replaceAll('\\', '/');
+      let path = _path.toLowerCase().replaceAll('\\', '/');
+      if (process.platform === "darwin") {
+        // add to path dot app for better detection
+        path = path + ".app"
+      }
       const toCompare = [];
       const splitPath = path.split('/');
       for (let i = 1; i < splitPath.length; i++) {
+        console.log(splitPath.slice(-i).join('/'));
         toCompare.push(splitPath.slice(-i).join('/'));
       }
 
@@ -52,6 +57,7 @@ export default class ProcessServer {
         toCompare.push(p.replace('_64', ''));
       }
 
+      
       for (const { executables, id, name } of DetectableDB) {
         if (executables?.some(x => {
           if (x.is_launcher) return false;

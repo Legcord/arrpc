@@ -1,19 +1,19 @@
-const { exec } = require('child_process');
+import { exec } from 'child_process';
 
 export const getProcesses = async () => {
   return new Promise((resolve) => {
-    exec('ps -axo pid,comm,args', (error, stdout, stderr) => {
+    exec('ps -awwx -o pid=,command=', (error, stdout, stderr) => {
       if (error || stderr) {
         resolve([]);
         return;
       }
-      const lines = stdout.trim().split('\n').slice(1);
+      const lines = stdout.trim().split('\n');
       const processes = lines.map(line => {
-        const match = line.trim().match(/^(\d+)\s+(\S+)\s*(.*)$/);
+        const match = line.trim().match(/^(\d+)\s+(.*)$/);
         if (!match) return null;
         const pid = +match[1];
-        const command = match[2];
-        const args = match[3] ? match[3].split(' ').filter(Boolean) : [];
+        const fullCmd = match[2];
+        const [command, ...args] = fullCmd.split(' ');
         return [pid, command, args];
       }).filter(Boolean);
       resolve(processes);
