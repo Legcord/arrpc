@@ -21,8 +21,9 @@ interface Game {
 }
 
 type GameList = Game[];
+type ProcessInfo = [number, string, string[]];
 
 export default class RPCServer extends EventEmitter {
   constructor(detectables: GameList);
-  getProcessesList(): Promise<GameList>;
+  getProcessesList(): Promise<ProcessInfo[]>;
 }

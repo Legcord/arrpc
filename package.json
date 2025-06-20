@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/OpenAsar/arrpc#readme",
   "dependencies": {
+    "koffi": "^2.12.0",
     "ws": "^8.18.0"
   },
   "type": "module",

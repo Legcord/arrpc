@@ -36,7 +36,6 @@ export default class ProcessServer {
     const DetectableDB = await this.getDetectables();
 
     // log(`got processed in ${(performance.now() - startTime).toFixed(2)}ms`);
-
     for (const [pid, _path, args] of processes) {
       let path = _path.toLowerCase().replaceAll('\\', '/');
       if (process.platform === "darwin") {
@@ -46,7 +45,6 @@ export default class ProcessServer {
       const toCompare = [];
       const splitPath = path.split('/');
       for (let i = 1; i < splitPath.length; i++) {
-        console.log(splitPath.slice(-i).join('/'));
         toCompare.push(splitPath.slice(-i).join('/'));
       }
 

@@ -31,7 +31,7 @@ export default class RPCServer extends EventEmitter {
     this.ipc = new IPCServer(handlers);
     this.ws = new WSServer(handlers);
 
-    if (!process.argv.includes('--no-process-scanning') && !process.env.ARRPC_NO_PROCESS_SCANNING) new ProcessServer(handlers);
+    new ProcessServer(handlers);
 
     return this;
   }
