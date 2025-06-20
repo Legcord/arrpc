@@ -1,7 +1,7 @@
 const rgb = (r, g, b, msg) => `\x1b[38;2;${r};${g};${b}m${msg}\x1b[0m`;
 const log = (...args) => console.log(`[${rgb(88, 101, 242, 'arRPC')} > ${rgb(237, 66, 69, 'process')}]`, ...args);
 
-let db;
+var db = [];
 let customDetectables = [];
 
 import * as Natives from './native/index.js';
@@ -37,7 +37,7 @@ export default class ProcessServer {
 
     // log(`got processed in ${(performance.now() - startTime).toFixed(2)}ms`);
 
-    for (const [ pid, _path, args ] of processes) {
+    for (const [pid, _path, args] of processes) {
       let path = _path.toLowerCase().replaceAll('\\', '/');
       if (process.platform === "darwin") {
         // add to path dot app for better detection
@@ -46,6 +46,7 @@ export default class ProcessServer {
       const toCompare = [];
       const splitPath = path.split('/');
       for (let i = 1; i < splitPath.length; i++) {
+        console.log(splitPath.slice(-i).join('/'));
         toCompare.push(splitPath.slice(-i).join('/'));
       }
 
@@ -56,7 +57,7 @@ export default class ProcessServer {
         toCompare.push(p.replace('_64', ''));
       }
 
-      
+
       for (const { executables, id, name } of DetectableDB) {
         if (executables?.some(x => {
           if (x.is_launcher) return false;
@@ -114,18 +115,19 @@ export default class ProcessServer {
     // process.stdout.write(`\r${' '.repeat(100)}\r[${rgb(88, 101, 242, 'arRPC')} > ${rgb(237, 66, 69, 'process')}] scanned (took ${(performance.now() - startTime).toFixed(2)}ms)`);
   }
   async getDetectables() {
-    if (typeof db !== "object") {
-      const data = await fetch(
-        "https://discord.com/api/v9/applications/detectable"
-      );
-      if (!data.ok) {
+    if (db.length === 0) {
+      try {
+        const data = await fetch(
+          "https://discord.com/api/v9/applications/detectable"
+        );
+        db = await data.json();
+        if (customDetectables.length) {
+          log('adding custom detectables');
+          db = db.concat(customDetectables);
+        }
+      } catch (e) {
         log('failed to fetch detectables, falling back to local copy');
-        return JSON.parse(fs.readFileSync(join(__dirname, 'detectables.json'), 'utf8'));;
-      }
-      db = await data.json();
-      if (customDetectables.length) {
-        log('adding custom detectables');
-        db = db.concat(customDetectables);
+        db = JSON.parse(fs.readFileSync(join(__dirname, 'detectables.json'), 'utf8'));
       }
     }
     return db;
