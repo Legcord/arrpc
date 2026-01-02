@@ -1,6 +1,6 @@
 import { exec } from 'child_process';
 
-export const getProcesses = async () => {
+const getProcesses = async () => {
   return new Promise((resolve) => {
     exec('ps -awwx -o pid=,command=', (error, stdout, stderr) => {
       if (error || stderr) {
@@ -20,3 +20,5 @@ export const getProcesses = async () => {
     });
   });
 };
+
+export { getProcesses };

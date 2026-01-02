@@ -7,7 +7,7 @@ import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-const path = join(__dirname, 'src', 'process', 'detectable.json');
+const path = join(__dirname, 'src', 'process', 'detectables.json');
 
 const current = JSON.parse(readFileSync(path, 'utf8'));
 

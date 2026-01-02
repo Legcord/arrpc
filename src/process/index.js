@@ -4,14 +4,12 @@ const log = (...args) => console.log(`[${rgb(88, 101, 242, 'arRPC')} > ${rgb(237
 var db = [];
 let customDetectables = [];
 
-import * as Natives from './native/index.js';
+import * as Native from './native/index.js';
 import fs from 'node:fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const Native = Natives[process.platform];
-
 
 const timestamps = {}, names = {}, pids = {};
 export default class ProcessServer {

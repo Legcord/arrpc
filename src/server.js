@@ -6,8 +6,8 @@ import { EventEmitter } from 'events';
 import IPCServer from './transports/ipc.js';
 import WSServer from './transports/websocket.js';
 import ProcessServer from './process/index.js';
-import * as Natives from './process/native/index.js';
-const Native = Natives[process.platform];
+import * as Native from './process/native/index.js';
+
 let socketId = 0;
 export default class RPCServer extends EventEmitter {
   constructor(additionalDetectables) { super();
