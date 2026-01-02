@@ -2,7 +2,7 @@ import { exec } from 'child_process';
 
 const getProcesses = async () => {
   return new Promise((resolve) => {
-    exec('ps -awwx -o pid=,command=', (error, stdout, stderr) => {
+    exec('/bin/ps -awwx -o pid=,command=', (error, stdout, stderr) => {
       if (error || stderr) {
         resolve([]);
         return;
