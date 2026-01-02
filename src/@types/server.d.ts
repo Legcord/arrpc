@@ -23,7 +23,14 @@ interface Game {
 type GameList = Game[];
 type ProcessInfo = [number, string, string[]];
 
+interface ServerSettings {
+  processScanning: boolean;
+  windowsLegacyScanning: boolean;
+  scanInterval: number;
+}
+
+
 export default class RPCServer extends EventEmitter {
-  constructor(detectables: GameList);
+  constructor(detectables: GameList, settings: ServerSettings);
   getProcessesList(): Promise<ProcessInfo[]>;
 }

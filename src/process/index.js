@@ -3,7 +3,7 @@ const log = (...args) => console.log(`[${rgb(88, 101, 242, 'arRPC')} > ${rgb(237
 
 var db = [];
 let customDetectables = [];
-
+let winModeLegacy = false;
 import * as Native from './native/index.js';
 import fs from 'node:fs';
 import { dirname, join } from 'path';
@@ -21,15 +21,21 @@ export default class ProcessServer {
     this.scan = this.scan.bind(this);
     this.getDetectables();
     customDetectables = handlers.customDetectables || [];
+    winModeLegacy = handlers.settings?.windowsLegacyScanning || false;
+
+    if (handlers.settings?.processScanning === false) {
+      log('process scanning disabled in settings');
+      return;
+    }
     this.scan();
-    setInterval(this.scan, 5000);
+    setInterval(this.scan, handlers.settings.scanInterval || 5000);
 
     log('started');
   }
 
   async scan() {
     // const startTime = performance.now();
-    const processes = await Native.getProcesses();
+    const processes = await Native.getProcesses(winModeLegacy);
     const ids = [];
     const DetectableDB = await this.getDetectables();
 

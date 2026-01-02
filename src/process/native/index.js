@@ -1,7 +1,11 @@
-export const getProcesses = async () => {
+export const getProcesses = async (winModeLegacy) => {
     switch (process.platform) {
         case 'win32':
-            return await import("./win32.js").then(module => module.getProcesses());
+            if (winModeLegacy) {
+                return await import("./win32Legacy.js").then(module => module.getProcesses());
+            } else {
+                return await import("./win32.js").then(module => module.getProcesses());
+            }
         case 'linux':
             return await import("./linux.js").then(module => module.getProcesses());
         case 'darwin':

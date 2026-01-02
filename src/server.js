@@ -9,8 +9,9 @@ import ProcessServer from './process/index.js';
 import * as Native from './process/native/index.js';
 
 let socketId = 0;
+let winModeLegacy = false;
 export default class RPCServer extends EventEmitter {
-  constructor(additionalDetectables) { super();
+  constructor(additionalDetectables, settings) { super();
     this.onConnection = this.onConnection.bind(this);
     this.onMessage = this.onMessage.bind(this);
     this.onClose = this.onClose.bind(this);
@@ -28,6 +29,10 @@ export default class RPCServer extends EventEmitter {
         handlers.customDetectables = additionalDetectables;
       }
     }
+    if (settings) {
+      handlers.settings = settings;
+    }
+    winModeLegacy = handlers.settings.windowsLegacyScanning || false;
     this.ipc = new IPCServer(handlers);
     this.ws = new WSServer(handlers);
 
@@ -41,7 +46,7 @@ export default class RPCServer extends EventEmitter {
       log('unsupported detectables platform:', process.platform);
       return [];
     }
-    return await Native.getProcesses();
+    return await Native.getProcesses(winModeLegacy);
   }
 
   onConnection(socket) {
