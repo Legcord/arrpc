@@ -28,7 +28,7 @@ export default class ProcessServer {
       return;
     }
     this.scan();
-    setInterval(this.scan, handlers.settings.scanInterval || 5000);
+    setInterval(this.scan, handlers.settings?.scanInterval || 5000);
 
     log('started');
   }

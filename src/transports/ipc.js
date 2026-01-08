@@ -135,43 +135,66 @@ const socketIsAvailable = async socket => {
 
 const getAvailableSocket = async (tries = 0) => {
   if (tries > 9) {
-    throw new Error('ran out of tries to find socket', tries);
+    throw new Error(`ran out of tries to find available socket (tried ${tries} paths)`);
   }
 
   const path = SOCKET_PATH + '-' + tries;
-  const socket = createConnection(path);
 
-  if (process.env.ARRPC_DEBUG) log('checking', path);
+  try {
+    const socket = createConnection(path);
 
-  if (await socketIsAvailable(socket)) {
-    if (platform !== 'win32') try { unlinkSync(path); } catch { }
+    if (process.env.ARRPC_DEBUG) log('checking', path);
 
-    return path;
+    if (await socketIsAvailable(socket)) {
+      if (platform !== 'win32') {
+        try {
+          unlinkSync(path);
+        } catch (e) {
+          if (process.env.ARRPC_DEBUG) log('failed to unlink', path, e);
+        }
+      }
+
+      return path;
+    }
+
+    log(`${path} not available, trying again (attempt ${tries + 1})`);
+    return getAvailableSocket(tries + 1);
+  } catch (e) {
+    log(`error checking socket ${path}:`, e.message);
+    throw e;
   }
-
-  log(`not available, trying again (attempt ${tries + 1})`);
-  return getAvailableSocket(tries + 1);
 };
 
 export default class IPCServer {
-  constructor(handers) { return new Promise(async res => {
-    this.handlers = handers;
+  constructor(handers) { return new Promise(async (res, rej) => {
+    try {
+      this.handlers = handers;
 
-    this.onConnection = this.onConnection.bind(this);
-    this.onMessage = this.onMessage.bind(this);
+      this.onConnection = this.onConnection.bind(this);
+      this.onMessage = this.onMessage.bind(this);
 
-    const server = createServer(this.onConnection);
-    server.on('error', e => {
-      log('server error', e);
-    });
+      const server = createServer(this.onConnection);
+      server.on('error', e => {
+        log('server error', e);
+        rej(e);
+      });
 
-    const socketPath = await getAvailableSocket();
-    server.listen(socketPath, () => {
-      log('listening at', socketPath);
-      this.server = server;
+      const socketPath = await getAvailableSocket();
+      server.listen(socketPath, () => {
+        log('listening at', socketPath);
+        this.server = server;
 
-      res(this);
-    });
+        res(this);
+      });
+
+      server.on('error', e => {
+        log('server listen error', e);
+        rej(e);
+      });
+    } catch (e) {
+      log('failed to initialize IPC server', e);
+      rej(e);
+    }
   }); }
 
   onConnection(socket) {
