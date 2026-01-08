@@ -186,11 +186,6 @@ export default class IPCServer {
 
         res(this);
       });
-
-      server.on('error', e => {
-        log('server listen error', e);
-        rej(e);
-      });
     } catch (e) {
       log('failed to initialize IPC server', e);
       rej(e);
