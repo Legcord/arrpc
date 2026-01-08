@@ -166,9 +166,9 @@ const getAvailableSocket = async (tries = 0) => {
 };
 
 export default class IPCServer {
-  constructor(handers) { return new Promise(async (res, rej) => {
+  constructor(handlers) { return new Promise(async (res, rej) => {
     try {
-      this.handlers = handers;
+      this.handlers = handlers;
 
       this.onConnection = this.onConnection.bind(this);
       this.onMessage = this.onMessage.bind(this);
