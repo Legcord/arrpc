@@ -9,48 +9,60 @@ const portRange = [ 6463, 6472 ]; // ports available/possible: 6463-6472
 
 export default class WSServer {
   constructor(handlers) { return (async () => {
-    this.handlers = handlers;
+    try {
+      this.handlers = handlers;
 
-    this.onConnection = this.onConnection.bind(this);
-    this.onMessage = this.onMessage.bind(this);
+      this.onConnection = this.onConnection.bind(this);
+      this.onMessage = this.onMessage.bind(this);
 
-    let port = portRange[0];
+      let port = portRange[0];
 
-    let http, wss;
-    while (port <= portRange[1]) {
-      if (process.env.ARRPC_DEBUG) log('trying port', port);
+      let http, wss;
+      while (port <= portRange[1]) {
+        if (process.env.ARRPC_DEBUG) log('trying port', port);
 
-      if (await new Promise(res => {
-        http = createServer();
-        http.on('error', e => {
-          // log('http error', e);
+        if (await new Promise(res => {
+          http = createServer();
+          http.on('error', e => {
+            if (process.env.ARRPC_DEBUG) log('http error', e);
 
-          if (e.code === 'EADDRINUSE') {
-            log(port, 'in use!');
-            res(false);
-          }
-        });
+            if (e.code === 'EADDRINUSE') {
+              log(port, 'in use!');
+              res(false);
+            } else {
+              log('http server error:', e.message);
+              res(false);
+            }
+          });
 
-        wss = new WebSocketServer({ server: http });
-        wss.on('error', e => {
-          // log('wss error', e);
-        });
+          wss = new WebSocketServer({ server: http });
+          wss.on('error', e => {
+            log('websocket server error:', e.message);
+          });
 
-        wss.on('connection', this.onConnection);
+          wss.on('connection', this.onConnection);
 
-        http.listen(port, '127.0.0.1', () => {
-          log('listening on', port);
+          http.listen(port, '127.0.0.1', () => {
+            log('listening on', port);
 
-          this.http = http;
-          this.wss = wss;
+            this.http = http;
+            this.wss = wss;
 
-          res(true);
-        });
-      })) break;
-      port++;
+            res(true);
+          });
+        })) break;
+        port++;
+      }
+
+      if (port > portRange[1]) {
+        throw new Error(`failed to find available port in range ${portRange[0]}-${portRange[1]}`);
+      }
+
+      return this;
+    } catch (e) {
+      log('failed to initialize WebSocket server:', e);
+      throw e;
     }
-
-    return this;
   })(); }
 
   onConnection(socket, req) {

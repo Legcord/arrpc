@@ -12,33 +12,45 @@ let socketId = 0;
 let winModeLegacy = false;
 export default class RPCServer extends EventEmitter {
   constructor(additionalDetectables, settings) { super();
-    this.onConnection = this.onConnection.bind(this);
-    this.onMessage = this.onMessage.bind(this);
-    this.onClose = this.onClose.bind(this);
+    return (async () => {
+      this.onConnection = this.onConnection.bind(this);
+      this.onMessage = this.onMessage.bind(this);
+      this.onClose = this.onClose.bind(this);
 
-    const handlers = {
-      connection: this.onConnection,
-      message: this.onMessage,
-      close: this.onClose
-    };
-    if (additionalDetectables) {
-      if (!Array.isArray(additionalDetectables)) {
-        log('additionalDetectables must be an array');
-        handlers.customDetectables = [];
-      } else {
-        handlers.customDetectables = additionalDetectables;
+      const handlers = {
+        connection: this.onConnection,
+        message: this.onMessage,
+        close: this.onClose
+      };
+      if (additionalDetectables) {
+        if (!Array.isArray(additionalDetectables)) {
+          log('additionalDetectables must be an array');
+          handlers.customDetectables = [];
+        } else {
+          handlers.customDetectables = additionalDetectables;
+        }
       }
-    }
-    if (settings) {
-      handlers.settings = settings;
-    }
-    winModeLegacy = handlers.settings.windowsLegacyScanning || false;
-    this.ipc = new IPCServer(handlers);
-    this.ws = new WSServer(handlers);
+      if (settings) {
+        handlers.settings = settings;
+      }
+      winModeLegacy = handlers.settings?.windowsLegacyScanning || false;
 
-    new ProcessServer(handlers);
+      try {
+        this.ipc = await new IPCServer(handlers);
+      } catch (e) {
+        log('failed to start IPC server:', e);
+      }
 
-    return this;
+      try {
+        this.ws = await new WSServer(handlers);
+      } catch (e) {
+        log('failed to start WebSocket server:', e);
+      }
+
+      new ProcessServer(handlers);
+
+      return this;
+    })();
   }
 
   async getProcessesList() {
