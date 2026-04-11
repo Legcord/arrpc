@@ -12,6 +12,18 @@ import { fileURLToPath } from 'url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const timestamps = {}, names = {}, pids = {};
+const BLACKLISTED_APPLICATION_IDS = new Set([
+  '363411421553360896',
+]);
+const BLACKLISTED_EXECUTABLE_NAMES = new Set([
+  'lms.exe',
+]);
+
+const isBlacklistedDetectable = ({ id, executables }) => {
+  if (BLACKLISTED_APPLICATION_IDS.has(id)) return true;
+  return executables?.some(({ name }) => name && BLACKLISTED_EXECUTABLE_NAMES.has(name.toLowerCase()));
+};
+
 export default class ProcessServer {
   constructor(handlers) {
     if (!Native) return log('unsupported platform:', process.platform);
@@ -28,7 +40,7 @@ export default class ProcessServer {
       return;
     }
     this.scan();
-    setInterval(this.scan, handlers.settings?.scanInterval || 5000);
+    setInterval(this.scan, Number(handlers.settings?.scanInterval) || 5000);
 
     log('started');
   }
@@ -42,10 +54,6 @@ export default class ProcessServer {
     // log(`got processed in ${(performance.now() - startTime).toFixed(2)}ms`);
     for (const [pid, _path, args] of processes) {
       let path = _path.toLowerCase().replaceAll('\\', '/');
-      if (process.platform === "darwin") {
-        // add to path dot app for better detection
-        path = path + ".app"
-      }
       const toCompare = [];
       const splitPath = path.split('/');
       for (let i = 1; i < splitPath.length; i++) {
@@ -131,6 +139,8 @@ export default class ProcessServer {
         log('failed to fetch detectables, falling back to local copy');
         db = JSON.parse(fs.readFileSync(join(__dirname, 'detectables.json'), 'utf8'));
       }
+
+      db = db.filter(detectable => !isBlacklistedDetectable(detectable));
     }
     return db;
   }
